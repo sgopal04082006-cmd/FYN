@@ -1,56 +1,9 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { featuredHomes } from '../data/homes'
 import './home.css'
 
-const navItems = ['Home', 'Explore Houses', 'Saved', 'Post Property', 'Login']
-
-const featuredHomes = [
-  {
-    id: 1,
-    title: 'Lavender Townhouse',
-    location: 'Indira Nagar, Pune',
-    price: '₹ 16,500',
-    advance: '₹ 20,000 advance',
-    rating: 4.9,
-    reviews: 62,
-    available: true,
-    amenities: ['2 BHK', 'Balcony', 'Furnished'],
-    images: [
-      'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=900&q=80',
-      'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=900&q=80',
-    ],
-  },
-  {
-    id: 2,
-    title: 'Premium Studio',
-    location: 'Koramangala, Bangalore',
-    price: '₹ 12,800',
-    advance: '₹ 18,000 advance',
-    rating: 4.7,
-    reviews: 48,
-    available: true,
-    amenities: ['Studio', 'Gym Access', 'Furnished'],
-    images: [
-      'https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=900&q=80',
-      'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=900&q=80',
-    ],
-  },
-  {
-    id: 3,
-    title: 'Family Villa',
-    location: 'Whitefield, Bangalore',
-    price: '₹ 22,300',
-    advance: '₹ 30,000 advance',
-    rating: 4.8,
-    reviews: 73,
-    available: false,
-    amenities: ['3 BHK', 'Private Parking', 'Garden'],
-    images: [
-      'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=900&q=80',
-      'https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=900&q=80',
-    ],
-  },
-]
+const navItems = ['Sign up', 'Login']
 
 const recentLocations = [
   { name: 'Banashankari', count: 28 },
@@ -88,19 +41,66 @@ const testimonials = [
 ]
 
 const Home = () => {
+  const [searchInput, setSearchInput] = useState('')
   const [query, setQuery] = useState('')
+  const [pendingRentRange, setPendingRentRange] = useState({ min: 0, max: 25000 })
+  const [pendingFilters, setPendingFilters] = useState({ balcony: 'any', furnished: 'any', bhkType: 'any', floorType: 'any' })
+  const [appliedRentRange, setAppliedRentRange] = useState({ min: 0, max: 25000 })
+  const [appliedFilters, setAppliedFilters] = useState({ balcony: 'any', furnished: 'any', bhkType: 'any', floorType: 'any' })
+  const [openFilter, setOpenFilter] = useState('')
   const [activeSlides, setActiveSlides] = useState(() =>
     Object.fromEntries(featuredHomes.map(home => [home.id, 0]))
   )
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [page, setPage] = useState('login');
+  
 
-  const filteredHomes = useMemo(
-    () =>
-      featuredHomes.filter(home =>
-        `${home.title} ${home.location}`.toLowerCase().includes(query.toLowerCase())
-      ),
-    [query]
-  )
+  const applyFilters = () => {
+    setQuery(searchInput)
+    setAppliedRentRange(pendingRentRange)
+    setAppliedFilters(pendingFilters)
+    setOpenFilter('')
+  }
+
+  const filteredHomes = useMemo(() => {
+    const searchValue = query.trim().toLowerCase()
+    return featuredHomes.filter(home => {
+      const priceValue = Number(home.price.replace(/[^0-9]/g, ''))
+      if (priceValue < appliedRentRange.min || priceValue > appliedRentRange.max) {
+        return false
+      }
+
+      if (appliedFilters.balcony === 'with' && !home.amenities.some(a => /balcony/i.test(a))) {
+        return false
+      }
+      if (appliedFilters.balcony === 'without' && home.amenities.some(a => /balcony/i.test(a))) {
+        return false
+      }
+
+      if (appliedFilters.furnished === 'yes' && !home.amenities.some(a => /furnished/i.test(a))) {
+        return false
+      }
+      if (appliedFilters.furnished === 'no' && home.amenities.some(a => /furnished/i.test(a))) {
+        return false
+      }
+
+      if (appliedFilters.bhkType !== 'any') {
+        const bhkKey = appliedFilters.bhkType === 'studio' ? 'studio' : `${appliedFilters.bhkType} bhk`
+        if (!home.amenities.some(a => a.toLowerCase().includes(bhkKey))) {
+          return false
+        }
+      }
+
+      if (appliedFilters.floorType !== 'any' && home.floorType !== appliedFilters.floorType) {
+        return false
+      }
+
+      if (!searchValue) return true
+      const text = `${home.title} ${home.location} ${home.description} ${home.address} ${home.houseType} ${home.owner.name}`.toLowerCase()
+      const amenities = home.amenities.join(' ').toLowerCase()
+      return text.includes(searchValue) || amenities.includes(searchValue)
+    })
+  }, [query, appliedRentRange, appliedFilters])
 
   const changeSlide = (id, direction) => {
     setActiveSlides(current => {
@@ -122,11 +122,16 @@ const Home = () => {
         </div>
 
         <nav className="nav-links">
-          {navItems.map(item => (
-            <a key={item} href={`#${item.toLowerCase().replace(/\s/g, '-')}`}>
-              {item}
-            </a>
-          ))}
+          {navItems.map(item =>
+             (
+              <p onClick={() =>{
+                 setPage(item.toLowerCase());
+                 
+              }} key={item} className={`nav-link ${page === item.toLowerCase().replace(/\s/g, '-') ? 'active' : ''}`}>
+                {item}
+              </p>
+            )
+          )}
         </nav>
 
         <button
@@ -181,42 +186,194 @@ const Home = () => {
             <p>Find your home by city, area, or property type</p>
 
             <div className="search-input-wrapper">
-              <label htmlFor="location">Location</label>
+              <label htmlFor="location">Location, owner, or keyword</label>
               <input
                 id="location"
                 type="text"
-                placeholder="Enter city, district, or locality"
-                value={query}
-                onChange={e => setQuery(e.target.value)}
+                placeholder="Enter city, district, or owner name"
+                value={searchInput}
+                onChange={e => setSearchInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && applyFilters()}
               />
             </div>
 
             <div className="filter-buttons">
-              <button className="filter-btn">Rent Range</button>
-              <button className="filter-btn">District</button>
-              <button className="filter-btn">Furnished</button>
-              <button className="filter-btn">Balcony</button>
-              <button className="filter-btn">BHK Type</button>
-              <button className="filter-btn">Floor Type</button>
-              <button className="filter-btn">Pet Friendly</button>
-              <button className="filter-btn">Shared Owner</button>
+              <button
+                type="button"
+                className={`filter-btn ${openFilter === 'rent' ? 'active' : ''}`}
+                onClick={() => setOpenFilter(openFilter === 'rent' ? '' : 'rent')}
+              >
+                Rent Range{pendingRentRange.min !== 0 || pendingRentRange.max !== 25000 ? `: ₹${pendingRentRange.min} - ₹${pendingRentRange.max}` : ''}
+              </button>
+              <button
+                type="button"
+                className={`filter-btn ${openFilter === 'balcony' ? 'active' : ''}`}
+                onClick={() => setOpenFilter(openFilter === 'balcony' ? '' : 'balcony')}
+              >
+                Balcony{pendingFilters.balcony !== 'any' ? `: ${pendingFilters.balcony === 'with' ? 'With' : 'Without'}` : ''}
+              </button>
+              <button
+                type="button"
+                className={`filter-btn ${openFilter === 'furnished' ? 'active' : ''}`}
+                onClick={() => setOpenFilter(openFilter === 'furnished' ? '' : 'furnished')}
+              >
+                Furnished{pendingFilters.furnished !== 'any' ? `: ${pendingFilters.furnished === 'yes' ? 'Yes' : 'No'}` : ''}
+              </button>
+              <button
+                type="button"
+                className={`filter-btn ${openFilter === 'bhk' ? 'active' : ''}`}
+                onClick={() => setOpenFilter(openFilter === 'bhk' ? '' : 'bhk')}
+              >
+                BHK Type{pendingFilters.bhkType !== 'any' ? `: ${pendingFilters.bhkType === 'studio' ? 'Studio' : `${pendingFilters.bhkType} BHK`}` : ''}
+              </button>
+              <button
+                type="button"
+                className={`filter-btn ${openFilter === 'floor' ? 'active' : ''}`}
+                onClick={() => setOpenFilter(openFilter === 'floor' ? '' : 'floor')}
+              >
+                Floor Type{pendingFilters.floorType !== 'any' ? `: ${pendingFilters.floorType}` : ''}
+              </button>
+              <button
+                type="button"
+                className="filter-btn"
+                onClick={() => {
+                  setPendingFilters({ balcony: 'any', furnished: 'any', bhkType: 'any', floorType: 'any' })
+                  setPendingRentRange({ min: 0, max: 25000 })
+                  setAppliedFilters({ balcony: 'any', furnished: 'any', bhkType: 'any', floorType: 'any' })
+                  setAppliedRentRange({ min: 0, max: 25000 })
+                  setQuery('')
+                  setSearchInput('')
+                  setOpenFilter('')
+                }}
+              >
+                Clear Filters
+              </button>
             </div>
 
-            <div className="quick-filters">
-              <span className="quick-filters-label">Quick Filters</span>
-              <div className="filter-chips">
-                <span className="chip">Near Me</span>
-                <span className="chip">Low Rent</span>
-                <span className="chip">No Advance</span>
-                <span className="chip">1 BHK</span>
-                <span className="chip">2 BHK</span>
-                <span className="chip">Family Friendly</span>
-                <span className="chip">Bachelor Friendly</span>
-                <span className="chip">Pet Friendly</span>
+            {openFilter === 'rent' && (
+              <div className="filter-panel">
+                <div className="filter-row">
+                  <label htmlFor="minRent">Min Rent</label>
+                  <input
+                    id="minRent"
+                    type="number"
+                    min="0"
+                    value={pendingRentRange.min}
+                    onChange={e => {
+                      const normalized = e.target.value.replace(/^0+(?=\d)/, '')
+                      setPendingRentRange(prev => ({
+                        ...prev,
+                        min: normalized === '' ? 0 : Number(normalized),
+                      }))
+                    }}
+                  />
+                </div>
+                <div className="filter-row">
+                  <label htmlFor="maxRent">Max Rent</label>
+                  <input
+                    id="maxRent"
+                    type="number"
+                    min="0"
+                    value={pendingRentRange.max}
+                    onChange={e => {
+                      const normalized = e.target.value.replace(/^0+(?=\d)/, '')
+                      setPendingRentRange(prev => ({
+                        ...prev,
+                        max: normalized === '' ? 0 : Number(normalized),
+                      }))
+                    }}
+                  />
+                </div>
+                <p className="filter-note">
+                  Only homes with rent between ₹{pendingRentRange.min.toLocaleString()} and ₹{pendingRentRange.max.toLocaleString()} will show after pressing Search Homes.
+                </p>
               </div>
-            </div>
+            )}
 
-            <button className="btn-primary" style={{ width: '100%' }}>
+            {openFilter === 'balcony' && (
+              <div className="filter-panel">
+                <span className="filter-label">Balcony</span>
+                <div className="filter-options">
+                  {['any', 'with', 'without'].map(option => (
+                    <button
+                      key={option}
+                      type="button"
+                      className={`filter-option ${pendingFilters.balcony === option ? 'selected' : ''}`}
+                      onClick={() => setPendingFilters(prev => ({ ...prev, balcony: option }))}
+                    >
+                      {option === 'any' ? 'Any' : option === 'with' ? 'With Balcony' : 'Without Balcony'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {openFilter === 'furnished' && (
+              <div className="filter-panel">
+                <span className="filter-label">Furnished</span>
+                <div className="filter-options">
+                  {['any', 'yes', 'no'].map(option => (
+                    <button
+                      key={option}
+                      type="button"
+                      className={`filter-option ${pendingFilters.furnished === option ? 'selected' : ''}`}
+                      onClick={() => setPendingFilters(prev => ({ ...prev, furnished: option }))}
+                    >
+                      {option === 'any' ? 'Any' : option === 'yes' ? 'Furnished' : 'Unfurnished'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {openFilter === 'bhk' && (
+              <div className="filter-panel">
+                <span className="filter-label">BHK Type</span>
+                <div className="filter-options">
+                  {[
+                    { value: 'any', label: 'Any' },
+                    { value: 'studio', label: 'Studio' },
+                    { value: '1', label: '1 BHK' },
+                    { value: '2', label: '2 BHK' },
+                    { value: '3', label: '3 BHK' },
+                  ].map(option => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={`filter-option ${pendingFilters.bhkType === option.value ? 'selected' : ''}`}
+                      onClick={() => setPendingFilters(prev => ({ ...prev, bhkType: option.value }))}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {openFilter === 'floor' && (
+              <div className="filter-panel">
+                <span className="filter-label">Floor Type</span>
+                <div className="filter-options">
+                  {['any', 'Ground Floor', 'Upper Floor', 'Top Floor', 'Duplex'].map(option => (
+                    <button
+                      key={option}
+                      type="button"
+                      className={`filter-option ${pendingFilters.floorType === option ? 'selected' : ''}`}
+                      onClick={() => setPendingFilters(prev => ({ ...prev, floorType: option }))}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <button
+              type="button"
+              className="btn-primary"
+              style={{ width: '100%' }}
+              onClick={applyFilters}
+            >
               Search Homes
             </button>
           </div>
