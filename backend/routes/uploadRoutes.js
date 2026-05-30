@@ -14,6 +14,7 @@ const router = express.Router();
 // Single Image Upload
 router.post(
   "/single",
+  require('../middleware/auth'),
   upload.single("image"),
   singleImageUpload
 );
@@ -21,6 +22,7 @@ router.post(
 // Multiple Image Upload
 router.post(
   "/multiple",
+  require('../middleware/auth'),
   upload.array("images", 10),
   multipleImageUpload
 );

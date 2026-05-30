@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useMemo, useState, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { featuredHomes } from '../data/homes'
 import './home.css'
 
-const navItems = ['Sign up', 'Login']
+// navbar will show a bookmark icon and a Logout action
 
 const recentLocations = [
   { name: 'Banashankari', count: 28 },
@@ -53,6 +53,24 @@ const Home = () => {
   )
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [page, setPage] = useState('login');
+  const navigate = useNavigate()
+
+  // bookmarked home ids (persisted)
+  const [bookmarked, setBookmarked] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('fyn_bookmarks') || '[]')
+    } catch (e) {
+      return []
+    }
+  })
+
+  const [showBookmarks, setShowBookmarks] = useState(false)
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('fyn_bookmarks', JSON.stringify(bookmarked))
+    } catch (e) {}
+  }, [bookmarked])
   
 
   const applyFilters = () => {
@@ -64,7 +82,7 @@ const Home = () => {
 
   const filteredHomes = useMemo(() => {
     const searchValue = query.trim().toLowerCase()
-    return featuredHomes.filter(home => {
+    const base = featuredHomes.filter(home => {
       const priceValue = Number(home.price.replace(/[^0-9]/g, ''))
       if (priceValue < appliedRentRange.min || priceValue > appliedRentRange.max) {
         return false
@@ -100,7 +118,13 @@ const Home = () => {
       const amenities = home.amenities.join(' ').toLowerCase()
       return text.includes(searchValue) || amenities.includes(searchValue)
     })
-  }, [query, appliedRentRange, appliedFilters])
+
+    if (showBookmarks) {
+      return base.filter(h => bookmarked.includes(h.id))
+    }
+
+    return base
+  }, [query, appliedRentRange, appliedFilters, showBookmarks, bookmarked])
 
   const changeSlide = (id, direction) => {
     setActiveSlides(current => {
@@ -122,16 +146,24 @@ const Home = () => {
         </div>
 
         <nav className="nav-links">
-          {navItems.map(item =>
-             (
-              <p onClick={() =>{
-                 setPage(item.toLowerCase());
-                 
-              }} key={item} className={`nav-link ${page === item.toLowerCase().replace(/\s/g, '-') ? 'active' : ''}`}>
-                {item}
-              </p>
-            )
-          )}
+          <button
+            className={`nav-bookmark ${showBookmarks ? 'active' : ''}`}
+            title="Show bookmarked homes"
+            onClick={() => setShowBookmarks(s => !s)}
+          >
+            🔖
+          </button>
+
+          <p
+            onClick={() => {
+              localStorage.removeItem('fyn_token')
+              localStorage.removeItem('fyn_user')
+              navigate('/')
+            }}
+            className={`nav-link logout-link`}
+          >
+            Logout
+          </p>
         </nav>
 
         <button
@@ -146,11 +178,13 @@ const Home = () => {
 
         {mobileMenuOpen && (
           <div className="mobile-menu">
-            {navItems.map(item => (
-              <a key={item} href={`#${item.toLowerCase().replace(/\s/g, '-')}`}>
-                {item}
-              </a>
-            ))}
+            <button
+              className={`mobile-bookmark ${showBookmarks ? 'active' : ''}`}
+              onClick={() => setShowBookmarks(s => !s)}
+            >
+              🔖 Bookmarks
+            </button>
+            <a href="#" onClick={() => { localStorage.removeItem('fyn_token'); localStorage.removeItem('fyn_user'); navigate('/')}}>Logout</a>
           </div>
         )}
       </header>
@@ -400,15 +434,22 @@ const Home = () => {
                   <button onClick={() => changeSlide(home.id, 1)}>›</button>
                 </div>
 
-                <button className="wishlist-btn" aria-label="Add to wishlist">
-                  ♥
+                <button
+                  className={`wishlist-btn ${bookmarked.includes(home.id) ? 'bookmarked' : ''}`}
+                  aria-label={bookmarked.includes(home.id) ? 'Remove bookmark' : 'Add bookmark'}
+                  onClick={() => {
+                    setBookmarked(prev => {
+                      if (prev.includes(home.id)) return prev.filter(id => id !== home.id)
+                      return [...prev, home.id]
+                    })
+                  }}
+                >
+                  {bookmarked.includes(home.id) ? '🔖' : '♡'}
                 </button>
 
                 <div className="rating-badge">{home.rating} ★ ({home.reviews})</div>
 
-                <div className={`availability-badge ${home.available ? '' : 'booked'}`}>
-                  {home.available ? '✓ Available Now' : '✗ Booked'}
-                </div>
+                
               </div>
 
               {/* Content Section */}

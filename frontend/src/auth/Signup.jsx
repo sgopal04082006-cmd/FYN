@@ -27,7 +27,8 @@ function Signup() {
     setLoading(true)
 
     try {
-      const response = await fetch('/api/signup', {
+      const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+      const response = await fetch(`${API_BASE}/api/users/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -43,7 +44,14 @@ function Signup() {
 
       const data = await response.json()
       console.log('Signup successful', data)
-      navigate('/login')
+      // if the backend returned a token, store it and auto-login
+      if (data.token) {
+        localStorage.setItem('fyn_token', data.token)
+        if (data.user) localStorage.setItem('fyn_user', JSON.stringify(data.user))
+        navigate('/home')
+      } else {
+        navigate('/login')
+      }
     } catch (fetchError) {
       setError('Unable to connect. Please try again later.')
       console.error(fetchError)

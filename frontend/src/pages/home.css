@@ -48,12 +48,12 @@ body {
   box-shadow: var(--shadow-sm);
 }
 
-.brand-row 
+.brand-row {
   display: flex;
   align-items: center;
   gap: 12px;
   cursor: pointer;
-
+}
 
 .logo-pill {
   width: 40px;
