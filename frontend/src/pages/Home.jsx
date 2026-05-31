@@ -1,6 +1,5 @@
 import { useMemo, useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { featuredHomes } from '../data/homes'
 import './home.css'
 
 // navbar will show a bookmark icon and a Logout action
@@ -48,18 +47,16 @@ const Home = () => {
   const [appliedRentRange, setAppliedRentRange] = useState({ min: 0, max: 25000 })
   const [appliedFilters, setAppliedFilters] = useState({ balcony: 'any', furnished: 'any', bhkType: 'any', floorType: 'any' })
   const [openFilter, setOpenFilter] = useState('')
-  const [activeSlides, setActiveSlides] = useState(() =>
-    Object.fromEntries(featuredHomes.map(home => [home.id, 0]))
-  )
+  const [homes, setHomes] = useState([])
+  const [activeSlides, setActiveSlides] = useState({})
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [page, setPage] = useState('login');
   const navigate = useNavigate()
 
   // bookmarked home ids (persisted)
   const [bookmarked, setBookmarked] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('fyn_bookmarks') || '[]')
-    } catch (e) {
+    } catch {
       return []
     }
   })
@@ -67,9 +64,45 @@ const Home = () => {
   const [showBookmarks, setShowBookmarks] = useState(false)
 
   useEffect(() => {
+    const token = localStorage.getItem('fyn_token')
+    const role = localStorage.getItem('fyn_role')
+    if (!token) {
+      navigate('/login/tenant')
+      return
+    }
+    if (role === 'owner') {
+      navigate('/owner/add')
+      return
+    }
+    if (role !== 'tenant') {
+      navigate('/login/tenant')
+    }
+  }, [navigate])
+
+  useEffect(() => {
+    const fetchHomes = async () => {
+      try {
+        const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+        const response = await fetch(`${API_BASE}/api/houses/getHouse`)
+        const data = await response.json().catch(() => ({}))
+        if (response.ok && Array.isArray(data.data)) {
+          setHomes(data.data)
+          setActiveSlides(Object.fromEntries(data.data.map(home => [String(home._id), 0])))
+        }
+      } catch (error) {
+        console.error('Failed to load homes', error)
+      }
+    }
+
+    fetchHomes()
+  }, [])
+
+  useEffect(() => {
     try {
       localStorage.setItem('fyn_bookmarks', JSON.stringify(bookmarked))
-    } catch (e) {}
+    } catch {
+      // ignore local storage write failures
+    }
   }, [bookmarked])
   
 
@@ -82,31 +115,27 @@ const Home = () => {
 
   const filteredHomes = useMemo(() => {
     const searchValue = query.trim().toLowerCase()
-    const base = featuredHomes.filter(home => {
-      const priceValue = Number(home.price.replace(/[^0-9]/g, ''))
-      if (priceValue < appliedRentRange.min || priceValue > appliedRentRange.max) {
+    const base = homes.filter(home => {
+      if (typeof home.rentAmount !== 'number') return false
+      if (home.rentAmount < appliedRentRange.min || home.rentAmount > appliedRentRange.max) {
         return false
       }
 
-      if (appliedFilters.balcony === 'with' && !home.amenities.some(a => /balcony/i.test(a))) {
-        return false
-      }
-      if (appliedFilters.balcony === 'without' && home.amenities.some(a => /balcony/i.test(a))) {
-        return false
+      if (appliedFilters.balcony !== 'any') {
+        const balconyValue = home.balcony?.toLowerCase()
+        if (appliedFilters.balcony === 'with' && balconyValue !== 'yes') return false
+        if (appliedFilters.balcony === 'without' && balconyValue !== 'no') return false
       }
 
-      if (appliedFilters.furnished === 'yes' && !home.amenities.some(a => /furnished/i.test(a))) {
-        return false
-      }
-      if (appliedFilters.furnished === 'no' && home.amenities.some(a => /furnished/i.test(a))) {
-        return false
+      if (appliedFilters.furnished !== 'any') {
+        const furnishedValue = home.furnished?.toLowerCase()
+        if (appliedFilters.furnished === 'yes' && furnishedValue !== 'yes') return false
+        if (appliedFilters.furnished === 'no' && furnishedValue !== 'no') return false
       }
 
       if (appliedFilters.bhkType !== 'any') {
-        const bhkKey = appliedFilters.bhkType === 'studio' ? 'studio' : `${appliedFilters.bhkType} bhk`
-        if (!home.amenities.some(a => a.toLowerCase().includes(bhkKey))) {
-          return false
-        }
+        const targetBhk = appliedFilters.bhkType === 'studio' ? 'studio' : `${appliedFilters.bhkType} bhk`
+        if (!home.bhk?.toLowerCase().includes(targetBhk)) return false
       }
 
       if (appliedFilters.floorType !== 'any' && home.floorType !== appliedFilters.floorType) {
@@ -114,25 +143,24 @@ const Home = () => {
       }
 
       if (!searchValue) return true
-      const text = `${home.title} ${home.location} ${home.description} ${home.address} ${home.houseType} ${home.owner.name}`.toLowerCase()
-      const amenities = home.amenities.join(' ').toLowerCase()
-      return text.includes(searchValue) || amenities.includes(searchValue)
+      const text = `${home.houseTitle} ${home.location} ${home.houseDescription} ${home.houseAddress} ${home.ownerName}`.toLowerCase()
+      return text.includes(searchValue)
     })
 
     if (showBookmarks) {
-      return base.filter(h => bookmarked.includes(h.id))
+      return base.filter(h => bookmarked.includes(String(h._id)))
     }
 
     return base
-  }, [query, appliedRentRange, appliedFilters, showBookmarks, bookmarked])
+  }, [homes, query, appliedRentRange, appliedFilters, showBookmarks, bookmarked])
 
   const changeSlide = (id, direction) => {
     setActiveSlides(current => {
-      const home = featuredHomes.find(h => h.id === id)
+      const home = homes.find(h => String(h._id) === String(id))
       if (!home) return current
-      const total = home.images.length
-      const nextIndex = (current[id] + direction + total) % total
-      return { ...current, [id]: nextIndex }
+      const total = home.housePhotos?.length || 1
+      const nextIndex = (Number(current[String(id)] || 0) + direction + total) % total
+      return { ...current, [String(id)]: nextIndex }
     })
   }
 
@@ -424,57 +452,53 @@ const Home = () => {
 
         <div className="card-grid">
           {filteredHomes.map(home => (
-            <div key={home.id} className="property-card">
+            <div key={String(home._id)} className="property-card">
               {/* Image Section */}
               <div className="card-image-wrapper">
-                <img src={home.images[activeSlides[home.id]]} alt={home.title} className="card-image" />
+                <img src={home.housePhotos?.[activeSlides[String(home._id)] || 0] || ''} alt={home.houseTitle} className="card-image" />
 
                 <div className="image-nav">
-                  <button onClick={() => changeSlide(home.id, -1)}>‹</button>
-                  <button onClick={() => changeSlide(home.id, 1)}>›</button>
+                  <button onClick={() => changeSlide(home._id, -1)}>‹</button>
+                  <button onClick={() => changeSlide(home._id, 1)}>›</button>
                 </div>
 
                 <button
-                  className={`wishlist-btn ${bookmarked.includes(home.id) ? 'bookmarked' : ''}`}
-                  aria-label={bookmarked.includes(home.id) ? 'Remove bookmark' : 'Add bookmark'}
+                  className={`wishlist-btn ${bookmarked.includes(String(home._id)) ? 'bookmarked' : ''}`}
+                  aria-label={bookmarked.includes(String(home._id)) ? 'Remove bookmark' : 'Add bookmark'}
                   onClick={() => {
                     setBookmarked(prev => {
-                      if (prev.includes(home.id)) return prev.filter(id => id !== home.id)
-                      return [...prev, home.id]
+                      const key = String(home._id)
+                      if (prev.includes(key)) return prev.filter(id => id !== key)
+                      return [...prev, key]
                     })
                   }}
                 >
-                  {bookmarked.includes(home.id) ? '🔖' : '♡'}
+                  {bookmarked.includes(String(home._id)) ? '🔖' : '♡'}
                 </button>
 
-                <div className="rating-badge">{home.rating} ★ ({home.reviews})</div>
-
-                
+                <div className="rating-badge">{home.bhk} • {home.floorType}</div>
               </div>
 
               {/* Content Section */}
               <div className="card-content">
                 <div className="card-header">
-                  <h3>{home.title}</h3>
+                  <h3>{home.houseTitle}</h3>
                   <span className="verified-badge">✓ Verified</span>
                 </div>
 
                 <p className="card-location">📍 {home.location}</p>
 
                 <div className="amenities">
-                  {home.amenities.map(amenity => (
-                    <span key={amenity} className="amenity-tag">
-                      {amenity}
-                    </span>
-                  ))}
+                  <span className="amenity-tag">{home.furnished} Furnished</span>
+                  <span className="amenity-tag">{home.balcony} Balcony</span>
                 </div>
 
                 <div className="card-footer">
                   <div className="price-info">
-                    <strong>{home.price}</strong>
-                    <span>{home.advance}</span>
+                    <strong>₹{home.rentAmount.toLocaleString()}</strong>
+                    <span>Advance: ₹{home.advanceAmount.toLocaleString()}</span>
                   </div>
-                  <Link to={`/${home.id}`} className="link">
+                  <Link to={`/${home._id}`} className="link">
                     View Details →
                   </Link>
                 </div>

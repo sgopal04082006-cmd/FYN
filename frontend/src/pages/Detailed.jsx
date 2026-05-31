@@ -1,21 +1,81 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
-import { featuredHomes } from '../data/homes'
+/* eslint-disable react-hooks/set-state-in-effect */
+import { useEffect, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import './home.css'
 
 const Detailed = () => {
   const { id } = useParams()
-  const home = useMemo(
-    () => featuredHomes.find(item => String(item.id) === String(id)),
-    [id]
-  )
+  const [home, setHome] = useState(null)
   const [mainImage, setMainImage] = useState('')
+  const [limitReached, setLimitReached] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const navigate = useNavigate()
 
   useEffect(() => {
-    if (home?.images?.length) {
-      setMainImage(home.images[0])
+    const token = localStorage.getItem('fyn_token')
+    const role = localStorage.getItem('fyn_role')
+    if (!token) {
+      navigate('/login/tenant')
+      return
     }
-  }, [home])
+    if (role === 'owner') {
+      navigate('/owner/add')
+      return
+    }
+    if (role !== 'tenant') {
+      navigate('/login/tenant')
+    }
+  }, [navigate])
+
+  useEffect(() => {
+    const viewKey = 'fyn_detail_views'
+    const currentViews = Number(localStorage.getItem(viewKey) || 0)
+    const nextViews = currentViews + 1
+    localStorage.setItem(viewKey, String(nextViews))
+    if (nextViews >= 50) {
+      setLimitReached(true)
+      setLoading(false)
+      return
+    }
+
+    const fetchHome = async () => {
+      try {
+        const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+        const response = await fetch(`${API_BASE}/api/houses/getHouse/${id}`)
+        const data = await response.json().catch(() => ({}))
+        if (response.ok && data.data) {
+          setHome(data.data)
+          setMainImage(data.data.housePhotos?.[0] || '')
+        }
+      } catch (error) {
+        console.error('Failed to load home details', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchHome()
+  }, [id])
+
+  if (loading) {
+    return (
+      <div className="section">
+        <p>Loading listing details…</p>
+      </div>
+    )
+  }
+
+  if (limitReached) {
+    return (
+      <div className="section">
+        <Link to="/" className="btn-secondary" style={{ marginBottom: '24px', display: 'inline-block' }}>
+          ← Back to Home
+        </Link>
+        <h1>Free limit reached</h1>
+        <p>You have reached the free detail view limit. Please upgrade or return to the home page.</p>
+      </div>
+    )
+  }
 
   if (!home) {
     return (
@@ -40,16 +100,16 @@ const Detailed = () => {
 
         <div className="detail-grid">
           <div className="detail-image-section">
-            <img src={mainImage} alt={home.title} className="detail-main-image" />
+            <img src={mainImage} alt={home.houseTitle} className="detail-main-image" />
             <div className="detail-thumbnails">
-              {home.images.map((image, index) => (
+              {home.housePhotos?.map((image, index) => (
                 <button
                   key={index}
                   type="button"
                   className={`detail-thumb ${image === mainImage ? 'active' : ''}`}
                   onClick={() => setMainImage(image)}
                 >
-                  <img src={image} alt={`${home.title} ${index + 1}`} />
+                  <img src={image} alt={`${home.houseTitle} ${index + 1}`} />
                 </button>
               ))}
             </div>
@@ -57,46 +117,37 @@ const Detailed = () => {
 
           <div className="detail-meta">
             <div className="detail-badges">
-              <span className="detail-badge">{home.available ? 'Available Now' : 'Booked'}</span>
-              <span className="detail-badge secondary">{home.rating} ★ ({home.reviews})</span>
+              <span className="detail-badge">Tenant view</span>
+              <span className="detail-badge secondary">{home.bhk} • {home.floorType}</span>
             </div>
 
-            <h1>{home.title}</h1>
+            <h1>{home.houseTitle}</h1>
             <p className="detail-location">📍 {home.location}</p>
             <div className="detail-price-block">
-              <strong>{home.price}</strong>
-              <span>{home.advance}</span>
+              <strong>₹{home.rentAmount.toLocaleString()}</strong>
+              <span>Advance: ₹{home.advanceAmount.toLocaleString()}</span>
             </div>
-            <p className="detail-address">{home.address}</p>
-            <p className="detail-description">{home.description}</p>
+            <p className="detail-address">{home.houseAddress}</p>
+            <p className="detail-description">{home.houseDescription}</p>
 
             <div className="detail-amenities">
-              {home.amenities.map(amenity => (
-                <span key={amenity}>{amenity}</span>
-              ))}
+              <span>{home.furnished} furnished</span>
+              <span>{home.balcony} balcony</span>
             </div>
-
-            {home.extras?.length > 0 && (
-              <div className="detail-amenities extra-amenities">
-                {home.extras.map(extra => (
-                  <span key={extra}>{extra}</span>
-                ))}
-              </div>
-            )}
 
             <div className="detail-owner-card">
               <h2>Owner Details</h2>
               <p>
-                <strong>Name:</strong> {home.owner.name}
+                <strong>Name:</strong> {home.ownerName}
               </p>
               <p>
-                <strong>Phone:</strong> {home.owner.phone}
+                <strong>Phone:</strong> {home.ownerPhone}
               </p>
               <p>
-                <strong>Email:</strong> {home.owner.email}
+                <strong>Email:</strong> {home.ownerEmail}
               </p>
               <p>
-                <strong>Owner Address:</strong> {home.owner.address}
+                <strong>Owner Address:</strong> {home.ownerAddress}
               </p>
             </div>
           </div>

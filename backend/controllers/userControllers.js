@@ -30,7 +30,7 @@ const createUser = async (req, res) => {
     delete userObj.password
 
     // sign JWT so user is logged in immediately after signup
-    const token = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, { expiresIn: '1d' })
+    const token = jwt.sign({ id: user._id, email: user.email, role: 'tenant' }, JWT_SECRET, { expiresIn: '1d' })
 
     res.status(201).json({ success: true, token, user: userObj })
   } catch (error) {
@@ -46,7 +46,7 @@ const loginUser = async (req, res) => {
     if (!normalizedEmail || !password) return res.status(400).json({ success: false, message: 'Email and password required' })
 
     const user = await User.findOne({ email: normalizedEmail })
-    if (!user) return res.status(401).json({ success: false, message: 'Invalid credentials' })
+    if (!user) return res.status(404).json({ success: false, message: 'User not found. Please sign up first.' })
 
       let match = false
       try {
@@ -63,7 +63,7 @@ const loginUser = async (req, res) => {
       }
       if (!match) return res.status(401).json({ success: false, message: 'Invalid credentials' })
 
-    const token = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, { expiresIn: '1d' })
+    const token = jwt.sign({ id: user._id, email: user.email, role: 'tenant' }, JWT_SECRET, { expiresIn: '1d' })
 
     const userObj = user.toObject()
     delete userObj.password

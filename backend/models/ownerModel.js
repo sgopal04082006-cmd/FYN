@@ -34,6 +34,11 @@ const ownerSchema = new mongoose.Schema(
       default: "",
     },
 
+    password: {
+      type: String,
+      default: "",
+    },
+
     profilePhoto: {
       type: String, // Store image URL or file path
       default: "",

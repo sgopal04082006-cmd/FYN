@@ -57,29 +57,34 @@ const Login = () => {
 
     try {
       const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
-      const response = await fetch(`${API_BASE}/api/users/login`, {
+      const endpoint = role === 'owner' ? '/api/owners/login' : '/api/users/login'
+      const response = await fetch(`${API_BASE}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       })
       let data = {}
-      try { data = await response.json() } catch (e) { data = {} }
+      try { data = await response.json() } catch { data = {} }
       if (!response.ok) {
         showToast(data.message || 'Login failed')
         return
       }
 
-      // store token and optionally user
+      // store token and user data by role
       if (data.token) {
         localStorage.setItem('fyn_token', data.token)
       }
-      if (data.user) {
-        localStorage.setItem('fyn_user', JSON.stringify(data.user))
+      if (role === 'owner' && data.owner) {
+        localStorage.setItem('fyn_user', JSON.stringify({ ...data.owner, role: 'owner' }))
+        localStorage.setItem('fyn_role', 'owner')
+      } else if (data.user) {
+        localStorage.setItem('fyn_user', JSON.stringify({ ...data.user, role: 'tenant' }))
+        localStorage.setItem('fyn_role', 'tenant')
       }
 
       showToast('Welcome back!')
       setFormData({ email: '', password: '', rememberMe: false })
-      navigate('/home')
+      navigate(role === 'owner' ? '/owner/add' : '/home')
     } catch (error) {
       showToast('Login failed. Please try again.')
       console.error('Login error:', error)
@@ -97,7 +102,7 @@ const Login = () => {
   };
 
   const handleSignUp = () => {
-    navigate('/signup');
+    navigate(`/signup/${role === 'owner' ? 'owner' : 'tenant'}`);
   };
 
   return (

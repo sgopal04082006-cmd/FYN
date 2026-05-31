@@ -24,19 +24,19 @@ const RoleSelect = () => {
             style={styles.buttonPrimary}
             onClick={() => navigate('/login/tenant')}
           >
-            I am a tenant
+            Tenant login
           </button>
           <button
             type="button"
             style={styles.buttonSecondary}
             onClick={() => navigate('/login/owner')}
           >
-            I am an owner
+            Owner login
           </button>
         </div>
 
         <div style={styles.note}>
-          If you already have an account, pick the correct role and sign in.
+          Use the correct role when signing in or signing up. Tenants cannot access the owner portal and owners cannot access the tenant portal.
         </div>
       </div>
     </main>

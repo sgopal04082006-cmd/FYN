@@ -16,7 +16,8 @@ function App() {
         <Route path="/owner/add" element={<Input />} />
         <Route path="/login" element={<Navigate to="/login/tenant" replace />} />
         <Route path="/login/:role" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
+        <Route path="/signup" element={<Navigate to="/signup/tenant" replace />} />
+        <Route path="/signup/:role" element={<Signup />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/:id" element={<Detailed />} />
       </Routes>

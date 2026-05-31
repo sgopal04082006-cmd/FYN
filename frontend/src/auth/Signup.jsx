@@ -1,11 +1,15 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 
 function Signup() {
+  const { role } = useParams()
+  const isOwner = role === 'owner'
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [phoneNumber, setPhoneNumber] = useState('')
+  const [address, setAddress] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
@@ -15,7 +19,7 @@ function Signup() {
     setError('')
 
     if (!name || !email || !password || !confirmPassword) {
-      setError('Please fill in all fields.')
+      setError('Please fill in all required fields.')
       return
     }
 
@@ -24,16 +28,26 @@ function Signup() {
       return
     }
 
+    if (isOwner && (!phoneNumber || !address)) {
+      setError('Owner signup requires phone number and address.')
+      return
+    }
+
     setLoading(true)
 
     try {
       const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
-      const response = await fetch(`${API_BASE}/api/users/register`, {
+      const endpoint = isOwner ? '/api/owners/register' : '/api/users/register'
+      const body = isOwner
+        ? { name, email, password, phoneNumber, address }
+        : { name, email, password }
+
+      const response = await fetch(`${API_BASE}${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify(body),
       })
 
       if (!response.ok) {
@@ -43,14 +57,21 @@ function Signup() {
       }
 
       const data = await response.json()
-      console.log('Signup successful', data)
-      // if the backend returned a token, store it and auto-login
       if (data.token) {
         localStorage.setItem('fyn_token', data.token)
-        if (data.user) localStorage.setItem('fyn_user', JSON.stringify(data.user))
-        navigate('/home')
+        if (isOwner && data.owner) {
+          localStorage.setItem('fyn_user', JSON.stringify({ ...data.owner, role: 'owner' }))
+          localStorage.setItem('fyn_role', 'owner')
+          navigate('/owner/add')
+        } else if (!isOwner && data.user) {
+          localStorage.setItem('fyn_user', JSON.stringify({ ...data.user, role: 'tenant' }))
+          localStorage.setItem('fyn_role', 'tenant')
+          navigate('/home')
+        } else {
+          navigate(isOwner ? '/login/owner' : '/login/tenant')
+        }
       } else {
-        navigate('/login')
+        navigate(isOwner ? '/login/owner' : '/login/tenant')
       }
     } catch (fetchError) {
       setError('Unable to connect. Please try again later.')
@@ -60,11 +81,19 @@ function Signup() {
     }
   }
 
+  const title = isOwner ? 'Create owner account' : 'Create tenant account'
+  const subtitle = isOwner
+    ? 'Register as an owner to add home details and manage your portal.'
+    : 'Create a tenant account to browse homes and access the tenant portal.'
+  const loginLink = isOwner ? '/login/owner' : '/login/tenant'
+  const alternateLink = isOwner ? '/signup/tenant' : '/signup/owner'
+  const alternateText = isOwner ? 'Sign up as tenant instead' : 'Sign up as owner instead'
+
   return (
     <div style={styles.page}>
       <div style={styles.card}>
-        <h1 style={styles.title}>Create your account</h1>
-        <p style={styles.subtitle}>Join now and start managing your listings.</p>
+        <h1 style={styles.title}>{title}</h1>
+        <p style={styles.subtitle}>{subtitle}</p>
 
         <form onSubmit={handleSubmit} style={styles.form}>
           <label style={styles.label} htmlFor="name">
@@ -92,6 +121,36 @@ function Signup() {
             style={styles.input}
             autoComplete="email"
           />
+
+          {isOwner && (
+            <>
+              <label style={styles.label} htmlFor="phone">
+                Phone number
+              </label>
+              <input
+                id="phone"
+                type="tel"
+                value={phoneNumber}
+                onChange={(event) => setPhoneNumber(event.target.value)}
+                placeholder="Enter your phone number"
+                style={styles.input}
+                autoComplete="tel"
+              />
+
+              <label style={styles.label} htmlFor="address">
+                Address
+              </label>
+              <input
+                id="address"
+                type="text"
+                value={address}
+                onChange={(event) => setAddress(event.target.value)}
+                placeholder="Street, city, state"
+                style={styles.input}
+                autoComplete="street-address"
+              />
+            </>
+          )}
 
           <label style={styles.label} htmlFor="password">
             Password
@@ -128,8 +187,13 @@ function Signup() {
 
         <div style={styles.footer}>
           <span style={styles.text}>Already have an account?</span>
-          <Link to="/login" style={styles.link}>
+          <Link to={loginLink} style={styles.link}>
             Sign in
+          </Link>
+        </div>
+        <div style={styles.altFooter}>
+          <Link to={alternateLink} style={styles.link}>
+            {alternateText}
           </Link>
         </div>
       </div>
@@ -148,7 +212,7 @@ const styles = {
   },
   card: {
     width: '100%',
-    maxWidth: '460px',
+    maxWidth: '520px',
     padding: '36px',
     borderRadius: '18px',
     backgroundColor: '#ffffff',
@@ -206,6 +270,10 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  altFooter: {
+    marginTop: '14px',
+    textAlign: 'center',
   },
   text: {
     color: '#6b7280',
