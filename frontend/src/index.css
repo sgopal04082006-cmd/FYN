@@ -458,15 +458,17 @@ input {
 .logo-wrap {
   display: grid;
   place-items: center;
-  width: 46px;
-  height: 46px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, var(--deep-purple), var(--lavender));
+  width: 120px;
+  height: 120px;
+  border-radius: 28px;
+  background: transparent;
+  box-shadow: 0 26px 56px rgba(109, 40, 217, 0.24);
+  border: 1px solid rgba(109, 40, 217, 0.18);
 }
 
 .logo {
-  width: 28px;
-  height: 28px;
+  width: 100px;
+  height: 100px;
 }
 
 .intro {
@@ -621,14 +623,14 @@ input {
   background: rgba(124, 58, 237, 0.18);
 }
 
-.bottom {
-  margin-top: 24px;
-  text-align: center;
-  color: #4b5563;
-}
+  .error-message {
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: #fee2e2;
+    color: #b91c1c;
+    font-size: 0.95rem;
+  }
 
-.register {
-  color: #7c3aed;
   font-weight: 700;
   text-decoration: underline;
 }

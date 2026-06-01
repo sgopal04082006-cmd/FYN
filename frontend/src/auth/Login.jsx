@@ -139,7 +139,7 @@ const Login = () => {
             </svg>
           </button>
           <div className="logo-wrap">
-            <img src="/assets/logo.svg" alt="FYN logo" className="logo" />
+            <img src="/fynlogo.jpeg" alt="FYN logo" className="logo" />
           </div>
         </header>
 

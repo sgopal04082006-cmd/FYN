@@ -7,7 +7,7 @@ const RoleSelect = () => {
     <main style={styles.page}>
       <div style={styles.card}>
         <div style={styles.header}>
-          <div style={styles.logo}>FYN</div>
+          <img src="/fynlogo.jpeg" alt="FYN logo" style={styles.logo} />
           <div>
             <p style={styles.overline}>Welcome to FYN</p>
             <h1 style={styles.title}>Choose your login type</h1>
@@ -67,15 +67,10 @@ const styles = {
     marginBottom: '28px',
   },
   logo: {
-    width: '60px',
-    height: '60px',
-    borderRadius: '18px',
-    display: 'grid',
-    placeItems: 'center',
-    background: 'linear-gradient(135deg, #7c3aed, #a78bfa)',
-    color: '#fff',
-    fontWeight: 800,
-    fontSize: '1.25rem',
+    width: '150px',
+    height: '150px',
+    borderRadius: '30px',
+    objectFit: 'cover',
   },
   overline: {
     margin: 0,

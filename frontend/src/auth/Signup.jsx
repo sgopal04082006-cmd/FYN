@@ -90,200 +90,133 @@ function Signup() {
   const alternateText = isOwner ? 'Sign up as tenant instead' : 'Sign up as owner instead'
 
   return (
-    <div style={styles.page}>
-      <div style={styles.card}>
-        <h1 style={styles.title}>{title}</h1>
-        <p style={styles.subtitle}>{subtitle}</p>
+    <main className="screen">
+      <div className="phone">
+        <header className="top">
+          <div className="logo-wrap">
+            <img src="/fynlogo.jpeg" alt="FYN logo" className="logo" />
+          </div>
+        </header>
 
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <label style={styles.label} htmlFor="name">
-            Full name
-          </label>
-          <input
-            id="name"
-            type="text"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            placeholder="Your full name"
-            style={styles.input}
-            autoComplete="name"
-          />
+        <section className="intro">
+          <p className="tagline">Welcome to FYN</p>
+          <h1 className="title">{title}</h1>
+          <p className="subtitle">{subtitle}</p>
+        </section>
 
-          <label style={styles.label} htmlFor="email">
-            Email address
-          </label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="you@example.com"
-            style={styles.input}
-            autoComplete="email"
-          />
+        <section className="card">
+          <form className="login-form" onSubmit={handleSubmit}>
+            <label className="field" htmlFor="name">
+              <span className="label">Full name</span>
+              <div className="input-group">
+                <input
+                  id="name"
+                  type="text"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  placeholder="Your full name"
+                  autoComplete="name"
+                />
+              </div>
+            </label>
 
-          {isOwner && (
-            <>
-              <label style={styles.label} htmlFor="phone">
-                Phone number
-              </label>
-              <input
-                id="phone"
-                type="tel"
-                value={phoneNumber}
-                onChange={(event) => setPhoneNumber(event.target.value)}
-                placeholder="Enter your phone number"
-                style={styles.input}
-                autoComplete="tel"
-              />
+            <label className="field" htmlFor="email">
+              <span className="label">Email address</span>
+              <div className="input-group">
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                />
+              </div>
+            </label>
 
-              <label style={styles.label} htmlFor="address">
-                Address
-              </label>
-              <input
-                id="address"
-                type="text"
-                value={address}
-                onChange={(event) => setAddress(event.target.value)}
-                placeholder="Street, city, state"
-                style={styles.input}
-                autoComplete="street-address"
-              />
-            </>
-          )}
+            {isOwner && (
+              <>
+                <label className="field" htmlFor="phone">
+                  <span className="label">Phone number</span>
+                  <div className="input-group">
+                    <input
+                      id="phone"
+                      type="tel"
+                      value={phoneNumber}
+                      onChange={(event) => setPhoneNumber(event.target.value)}
+                      placeholder="Enter your phone number"
+                      autoComplete="tel"
+                    />
+                  </div>
+                </label>
 
-          <label style={styles.label} htmlFor="password">
-            Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            placeholder="Create a password"
-            style={styles.input}
-            autoComplete="new-password"
-          />
+                <label className="field" htmlFor="address">
+                  <span className="label">Address</span>
+                  <div className="input-group">
+                    <input
+                      id="address"
+                      type="text"
+                      value={address}
+                      onChange={(event) => setAddress(event.target.value)}
+                      placeholder="Street, city, state"
+                      autoComplete="street-address"
+                    />
+                  </div>
+                </label>
+              </>
+            )}
 
-          <label style={styles.label} htmlFor="confirm-password">
-            Confirm password
-          </label>
-          <input
-            id="confirm-password"
-            type="password"
-            value={confirmPassword}
-            onChange={(event) => setConfirmPassword(event.target.value)}
-            placeholder="Confirm your password"
-            style={styles.input}
-            autoComplete="new-password"
-          />
+            <label className="field" htmlFor="password">
+              <span className="label">Password</span>
+              <div className="input-group">
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder="Create a password"
+                  autoComplete="new-password"
+                />
+              </div>
+            </label>
 
-          {error && <div style={styles.error}>{error}</div>}
+            <label className="field" htmlFor="confirm-password">
+              <span className="label">Confirm password</span>
+              <div className="input-group">
+                <input
+                  id="confirm-password"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  placeholder="Confirm your password"
+                  autoComplete="new-password"
+                />
+              </div>
+            </label>
 
-          <button type="submit" style={styles.button} disabled={loading}>
-            {loading ? 'Creating account…' : 'Create account'}
-          </button>
-        </form>
+            {error && <div className="error-message">{error}</div>}
 
-        <div style={styles.footer}>
-          <span style={styles.text}>Already have an account?</span>
-          <Link to={loginLink} style={styles.link}>
-            Sign in
-          </Link>
-        </div>
-        <div style={styles.altFooter}>
-          <Link to={alternateLink} style={styles.link}>
-            {alternateText}
-          </Link>
-        </div>
+            <button type="submit" className="btn primary" disabled={loading}>
+              {loading ? 'Creating account…' : 'Create account'}
+            </button>
+          </form>
+
+          <div className="bottom">
+            Already have an account?{' '}
+            <Link to={loginLink} className="register">
+              Sign in
+            </Link>
+          </div>
+
+          <div className="bottom">
+            <Link to={alternateLink} className="register">
+              {alternateText}
+            </Link>
+          </div>
+        </section>
       </div>
-    </div>
+    </main>
   )
-}
-
-const styles = {
-  page: {
-    minHeight: '100vh',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '20px',
-    backgroundColor: '#f3f4f6',
-  },
-  card: {
-    width: '100%',
-    maxWidth: '520px',
-    padding: '36px',
-    borderRadius: '18px',
-    backgroundColor: '#ffffff',
-    boxShadow: '0 24px 80px rgba(15, 23, 42, 0.08)',
-  },
-  title: {
-    margin: 0,
-    fontSize: '1.95rem',
-    fontWeight: 700,
-    color: '#111827',
-  },
-  subtitle: {
-    marginTop: '10px',
-    marginBottom: '24px',
-    color: '#6b7280',
-    lineHeight: 1.6,
-  },
-  form: {
-    display: 'grid',
-    gap: '16px',
-  },
-  label: {
-    color: '#374151',
-    fontSize: '0.95rem',
-    fontWeight: 600,
-  },
-  input: {
-    width: '100%',
-    padding: '12px 14px',
-    borderRadius: '12px',
-    border: '1px solid #d1d5db',
-    fontSize: '1rem',
-    outline: 'none',
-  },
-  button: {
-    width: '100%',
-    padding: '14px',
-    borderRadius: '12px',
-    border: 'none',
-    backgroundColor: '#2563eb',
-    color: '#ffffff',
-    fontSize: '1rem',
-    fontWeight: 700,
-    cursor: 'pointer',
-  },
-  error: {
-    padding: '12px',
-    borderRadius: '12px',
-    backgroundColor: '#fee2e2',
-    color: '#b91c1c',
-    fontSize: '0.95rem',
-  },
-  footer: {
-    marginTop: '20px',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  altFooter: {
-    marginTop: '14px',
-    textAlign: 'center',
-  },
-  text: {
-    color: '#6b7280',
-    fontSize: '0.95rem',
-  },
-  link: {
-    color: '#2563eb',
-    textDecoration: 'none',
-    fontWeight: 600,
-  },
 }
 
 export default Signup

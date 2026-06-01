@@ -4,12 +4,7 @@ import './home.css'
 
 // navbar will show a bookmark icon and a Logout action
 
-const recentLocations = [
-  { name: 'Banashankari', count: 28 },
-  { name: 'Andheri East', count: 21 },
-  { name: 'Hitech City', count: 34 },
-  { name: 'Jayanagar', count: 19 },
-]
+// recentLocations will be derived from fetched homes to avoid showing fake data
 
 const whyChoose = [
   {
@@ -154,6 +149,19 @@ const Home = () => {
     return base
   }, [homes, query, appliedRentRange, appliedFilters, showBookmarks, bookmarked])
 
+  const recentLocationsFromHomes = useMemo(() => {
+    const counts = {}
+    homes.forEach(h => {
+      const loc = (h.location || '').trim()
+      if (!loc) return
+      counts[loc] = (counts[loc] || 0) + 1
+    })
+
+    const list = Object.entries(counts).map(([name, count]) => ({ name, count }))
+    list.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+    return list.slice(0, 8)
+  }, [homes])
+
   const changeSlide = (id, direction) => {
     setActiveSlides(current => {
       const home = homes.find(h => String(h._id) === String(id))
@@ -169,7 +177,7 @@ const Home = () => {
       {/* NAVBAR */}
       <header className="fyn-navbar">
         <div className="brand-row">
-          <div className="logo-pill">FYN</div>
+          <img src="/fynlogo.jpeg" alt="FYN logo" className="logo-img" />
           <span className="brand-name">Find Your Nest</span>
         </div>
 
@@ -508,23 +516,25 @@ const Home = () => {
         </div>
       </section>
 
-      {/* RECENT LOCATIONS SECTION */}
-      <section id="recently-added" className="section">
-        <div className="section-header">
-          <span className="section-tag">Recently Added</span>
-          <h2>New Listings Trending Now</h2>
-          <p>Check out the newest rental properties in popular neighborhoods.</p>
-        </div>
+      {/* RECENT LOCATIONS SECTION: render only when we have real data */}
+      {recentLocationsFromHomes.length > 0 && (
+        <section id="recently-added" className="section">
+          <div className="section-header">
+            <span className="section-tag">Recently Added</span>
+            <h2>New Listings Trending Now</h2>
+            <p>Check out the newest rental properties in popular neighborhoods.</p>
+          </div>
 
-        <div className="locations-grid">
-          {recentLocations.map(location => (
-            <div key={location.name} className="location-card">
-              <strong>{location.name}</strong>
-              <p>{location.count} new homes</p>
-            </div>
-          ))}
-        </div>
-      </section>
+          <div className="locations-grid">
+            {recentLocationsFromHomes.map(location => (
+              <div key={location.name} className="location-card">
+                <strong>{location.name}</strong>
+                <p>{location.count} new homes</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* WHY CHOOSE FYN SECTION */}
       <section id="why-fyn" className="section">
