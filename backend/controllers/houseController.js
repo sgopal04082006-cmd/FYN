@@ -7,8 +7,8 @@ const { uploadSingleImage } = require("../utils/cloudinaryUpload");
 const createHouse = async (req, res) => {
   console.log(req.body)
   try {
-    if (!req.user || req.user.role !== 'owner') {
-      return res.status(403).json({ success: false, message: 'Owner access only' })
+    if (!req.user) {
+      return res.status(403).json({ success: false, message: 'user not found' })
     }
 
     const {
@@ -101,9 +101,10 @@ const createHouse = async (req, res) => {
 
 // Get Houses by Owner
 const getHousesByOwner = async (req, res) => {
+  console.log(req.user);
   try {
-    if (!req.user || req.user.role !== 'owner') {
-      return res.status(403).json({ success: false, message: 'Owner access only' })
+    if (!req.user) {
+      return res.status(403).json({ success: false, message: 'User not found' })
     }
 
     const houses = await House.find({ ownerId: req.user.id });
@@ -157,8 +158,8 @@ const getHouseById = async (req, res) => {
 // Update House
 const updateHouse = async (req, res) => {
   try {
-    if (!req.user || req.user.role !== 'owner') {
-      return res.status(403).json({ success: false, message: 'Owner access only' })
+    if (!req.user) {
+      return res.status(403).json({ success: false, message: 'user not found' })
     }
 
     const house = await House.findById(req.params.id);
@@ -190,8 +191,8 @@ const updateHouse = async (req, res) => {
 // Delete House
 const deleteHouse = async (req, res) => {
   try {
-    if (!req.user || req.user.role !== 'owner') {
-      return res.status(403).json({ success: false, message: 'Owner access only' })
+    if (!req.user) {
+      return res.status(403).json({ success: false, message: 'user not found' })
     }
 
     const house = await House.findById(req.params.id);

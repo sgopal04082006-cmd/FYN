@@ -9,17 +9,6 @@ function Dashboard() {
   const [error, setError] = useState('')
   const [deleteConfirm, setDeleteConfirm] = useState(null)
 
-  useEffect(() => {
-    const token = localStorage.getItem('fyn_token')
-    const role = localStorage.getItem('fyn_role')
-    if (!token || role !== 'owner') {
-      navigate('/login/owner')
-      return
-    }
-
-    fetchHouses()
-  }, [navigate])
-
   const fetchHouses = async () => {
     try {
       setLoading(true)
@@ -30,7 +19,6 @@ function Dashboard() {
           Authorization: `Bearer ${token}`,
         },
       })
-
       const data = await response.json().catch(() => ({}))
       if (response.ok && Array.isArray(data.data)) {
         setHouses(data.data)
@@ -44,6 +32,21 @@ function Dashboard() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    const token = localStorage.getItem('fyn_token')
+    const role = localStorage.getItem('fyn_role')
+    if (!token || role !== 'owner') {
+      navigate('/login/owner')
+      return
+    }
+
+    const load = async () => {
+      await fetchHouses()
+    }
+
+    load()
+  }, [navigate])
 
   const handleDelete = async (id) => {
     if (deleteConfirm !== id) {

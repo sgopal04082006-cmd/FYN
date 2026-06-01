@@ -84,7 +84,7 @@ const Login = () => {
 
       showToast('Welcome back!')
       setFormData({ email: '', password: '', rememberMe: false })
-      navigate(role === 'owner' ? '/owner/add' : '/home')
+      navigate(role === 'owner' ? '/owner/dashboard' : '/home')
     } catch (error) {
       showToast('Login failed. Please try again.')
       console.error('Login error:', error)
